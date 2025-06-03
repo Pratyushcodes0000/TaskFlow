@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaChartLine, FaClock, FaUsers, FaChartBar, FaColumns, FaFilePdf, FaBalanceScale, FaCalendarAlt } from 'react-icons/fa';
+import { FaChartLine, FaClock, FaUsers, FaChartBar, FaColumns, FaFilePdf, FaBalanceScale, FaCalendarAlt, FaArrowRight } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import './LandingPage.css';
 
@@ -9,14 +9,58 @@ const LandingPage = () => {
       {/* Hero Section */}
       <section className="hero-section">
         <div className="hero-content">
+          <div className="hero-tagline">
+            <span className="tagline-badge">New</span>
+            <span className="tagline-text">AI-Powered Project Management</span>
+          </div>
           <h1>TaskFlow</h1>
           <h2>Smart Project Management for Modern Teams</h2>
-          <p>Automate time tracking, predict delays, and optimize team performance with AI-powered insights.</p>
+          <p className="hero-description">Automate time tracking, predict delays, and optimize team performance with AI-powered insights.</p>
+          
+          <div className="hero-stats">
+            <div className="stat-item">
+              <span className="stat-number">Distribute</span>
+              <span className="stat-label">Workload</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-number">40%</span>
+              <span className="stat-label">Faster Delivery</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-number">24/7</span>
+              <span className="stat-label">Support</span>
+            </div>
+          </div>
+
           <div className="cta-buttons">
             <Link to="/login">
-              <button className="primary-btn">Get Started</button>
+              <button className="primary-btn">
+                Get Started
+                <FaArrowRight className="btn-icon" />
+              </button>
             </Link>
             <button className="secondary-btn">Watch Demo</button>
+          </div>
+
+          <div className="hero-features">
+            <div className="feature-pill">
+              <FaClock className="pill-icon" />
+              <span>Automatic Time Tracking</span>
+            </div>
+            <div className="feature-pill">
+              <FaChartLine className="pill-icon" />
+              <span>AI Predictions</span>
+            </div>
+            <div className="feature-pill">
+              <FaUsers className="pill-icon" />
+              <span>Team Analytics</span>
+            </div>
+          </div>
+        </div>
+        
+        <div className="hero-image">
+          <div className="dashboard-preview">
+            {/* Placeholder for dashboard screenshot */}
           </div>
         </div>
       </section>
@@ -56,6 +100,7 @@ const LandingPage = () => {
             <p>Generate professional PDF reports for stakeholders with a single click.</p>
           </div>
         </div>
+        
       </section>
 
       {/* Benefits Section */}

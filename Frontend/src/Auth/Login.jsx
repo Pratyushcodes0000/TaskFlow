@@ -1,30 +1,209 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FcGoogle } from 'react-icons/fc';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import './Login.css';
 
 const Login = () => {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  });
+  const [loginError, setLoginError] = useState(null);
+  const [user, setUser] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+  useEffect(() => {
+    // Check for existing user data
+    try {
+      const storedUser = localStorage.getItem('user');
+      console.log('Stored user data:', storedUser);
+      
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        console.log('Parsed user data:', parsedUser);
+        
+        if (parsedUser && parsedUser.email) {
+          setUser(parsedUser);
+          setIsLoggedIn(true);
+          console.log('User is already logged in');
+        } else {
+          console.warn('Invalid stored user data format');
+          localStorage.removeItem('user');
+        }
+      }
+    } catch (error) {
+      console.error('Error handling stored user data:', error);
+      localStorage.removeItem('user');
+    }
+
+    // Load Google OAuth script only if not logged in
+    if (!isLoggedIn) {
+      const loadGoogleScript = () => {
+        const script = document.createElement('script');
+        script.src = 'https://accounts.google.com/gsi/client';
+        script.async = true;
+        script.defer = true;
+        document.body.appendChild(script);
+
+        script.onload = () => {
+          const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+          console.log('Google Client ID:', clientId);
+
+          if (!clientId) {
+            console.error('Google Client ID is missing. Please check your .env file.');
+            setLoginError('Google authentication is not properly configured.');
+            return;
+          }
+
+          try {
+            window.google.accounts.id.initialize({
+              client_id: clientId,
+              callback: handleGoogleLogin,
+              auto_select: false,
+              cancel_on_tap_outside: true
+            });
+
+            window.google.accounts.id.renderButton(
+              document.getElementById('googleButton'),
+              { 
+                theme: 'outline', 
+                size: 'large', 
+                width: '100%',
+                text: 'continue_with',
+                shape: 'rectangular'
+              }
+            );
+          } catch (error) {
+            console.error('Error initializing Google Sign-In:', error);
+            setLoginError('Failed to initialize Google Sign-In');
+          }
+        };
+
+        script.onerror = () => {
+          console.error('Failed to load Google Sign-In script');
+          setLoginError('Failed to load Google Sign-In');
+        };
+      };
+
+      loadGoogleScript();
+    }
+  }, [isLoggedIn]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    setUser(null);
+    setIsLoggedIn(false);
+    navigate('/login');
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Handle login logic here
-    console.log('Login attempt:', formData);
+  const handleGoogleLogin = async (credentialResponse) => {
+    try {
+      setLoginError(null);
+      console.log('Google Token received:', credentialResponse.credential ? 'Yes' : 'No');
+      
+      // Configure axios defaults
+      axios.defaults.withCredentials = true;
+      
+      // Send token to backend
+      const res = await axios.post('http://localhost:8000/api/auth/google', 
+        { token: credentialResponse.credential },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          withCredentials: true
+        }
+      );
+      
+      console.log('Server response:', res.data); // Debug log
+      
+      if (!res.data || !res.data.user) {
+        console.error('Invalid server response:', res.data); // Debug log
+        throw new Error('Invalid response from server');
+      }
+
+      const userData = res.data.user;
+      console.log("Received user data:", userData); // Debug log
+
+      // Verify required fields
+      if (!userData.name || !userData.email || !userData.picture) {
+        console.error('Missing user data fields:', {
+          hasName: !!userData.name,
+          hasEmail: !!userData.email,
+          hasPicture: !!userData.picture
+        });
+        throw new Error('Missing required user data');
+      }
+
+      // Store user data in localStorage
+      try {
+        const userDataToStore = {
+          name: userData.name,
+          email: userData.email,
+          picture: userData.picture
+        };
+        
+        console.log("Attempting to store user data:", userDataToStore); // Debug log
+        
+        // Clear existing data first
+        localStorage.removeItem('user');
+        
+        // Store new data
+        localStorage.setItem('user', JSON.stringify(userDataToStore));
+        
+        // Verify storage
+        const storedData = localStorage.getItem('user');
+        console.log("Verified stored data:", storedData); // Debug log
+        
+        if (!storedData) {
+          throw new Error('Failed to verify data storage');
+        }
+        
+        setUser(userDataToStore);
+        console.log("User state updated successfully"); // Debug log
+        
+        // Navigate after successful storage
+        navigate('/');
+      } catch (storageError) {
+        console.error('Error storing user data:', storageError);
+        setLoginError('Failed to save login information. Please try again.');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      if (error.code === 'ERR_NETWORK') {
+        setLoginError('Cannot connect to the server. Please make sure the server is running.');
+      } else {
+        setLoginError(error.response?.data?.error || 'Login failed. Please try again.');
+      }
+    }
   };
 
-  const handleGoogleLogin = () => {
-    // Implement Google login logic here
-    console.log('Google login clicked');
-  };
+  if (isLoggedIn) {
+    return (
+      <div className="login-container">
+        <div className="login-box">
+          <h1>Welcome Back 👋</h1>
+          <div className="logged-in-message">
+            <p>You are already logged in as:</p>
+            <div className="user-info">
+              {user?.picture && (
+                <img 
+                  src={user.picture} 
+                  alt={user.name} 
+                  className="user-avatar"
+                />
+              )}
+              <div className="user-details">
+                <h3>{user?.name}</h3>
+                <p>{user?.email}</p>
+              </div>
+            </div>
+            <button onClick={handleLogout} className="logout-button">
+              Logout
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="login-container">
@@ -32,15 +211,19 @@ const Login = () => {
         <h1>Welcome Back 👋</h1>
         <p className="subtitle">Please sign in to continue</p>
 
-        <form onSubmit={handleSubmit} className="login-form">
+        {loginError && (
+          <div className="error-message">
+            {loginError}
+          </div>
+        )}
+
+        <form className="login-form">
           <div className="form-group">
             <label htmlFor="email">Email</label>
             <input
               type="email"
               id="email"
               name="email"
-              value={formData.email}
-              onChange={handleChange}
               placeholder="Enter your email"
               required
             />
@@ -52,8 +235,6 @@ const Login = () => {
               type="password"
               id="password"
               name="password"
-              value={formData.password}
-              onChange={handleChange}
               placeholder="Enter your password"
               required
             />
@@ -68,10 +249,7 @@ const Login = () => {
           <span>or</span>
         </div>
 
-        <button onClick={handleGoogleLogin} className="google-button">
-          <FcGoogle className="google-icon" />
-          Continue with Google
-        </button>
+        <div id="googleButton"></div>
 
         <p className="signup-link">
           Don't have an account? <a href="/signup">Sign up</a>

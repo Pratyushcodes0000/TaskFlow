@@ -46,11 +46,15 @@ const Header = () => {
       <div className="header-right">
         {user ? (
           <>
-            <Link to="/dashboard" className="nav-link">
-              Dashboard
-            </Link>
+          <Link to="/ProjectsManagement" className='nav-link'>
+          My Projects
+          </Link>
+           
             <Link to="/settings" className="nav-link">
               Settings
+            </Link>
+            <Link to="/help" className="nav-link">
+            Help
             </Link>
             <div className="profile-section">
               {user.picture ? (

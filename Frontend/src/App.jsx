@@ -1,5 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './Auth/AuthContext';
+import ProtectedRoute from './Auth/ProtectedRoute';
 import LandingPage from './LandingPage/LandingPage';
 import Login from './Auth/Login';
 import ProjectsManagement from './Projects/ProjectsManagement';
@@ -10,16 +12,39 @@ import './App.css';
 
 function App() {
   return (
-    <Router>
-      <Header />
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/ProjectsManagement" element={<ProjectsManagement />} />
-        <Route path="/NewProject" element={<NewProject />} />
-        <Route path="/projectsManagement/GroupDashboard" element={<GroupDashboard />} />
-      </Routes>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Header />
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<Login />} />
+          <Route 
+            path="/ProjectsManagement" 
+            element={
+              <ProtectedRoute>
+                <ProjectsManagement />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/NewProject" 
+            element={
+              <ProtectedRoute>
+                <NewProject />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/projectsManagement/GroupDashboard" 
+            element={
+              <ProtectedRoute>
+                <GroupDashboard />
+              </ProtectedRoute>
+            } 
+          />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
 

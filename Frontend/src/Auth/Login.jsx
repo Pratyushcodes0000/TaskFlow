@@ -2,40 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { FcGoogle } from 'react-icons/fc';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from './AuthContext';
 import './Login.css';
 
 const Login = () => {
   const [loginError, setLoginError] = useState(null);
-  const [user, setUser] = useState(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { user, isAuthenticated, login, logout } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check for existing user data
-    try {
-      const storedUser = localStorage.getItem('user');
-      console.log('Stored user data:', storedUser);
-      
-      if (storedUser) {
-        const parsedUser = JSON.parse(storedUser);
-        console.log('Parsed user data:', parsedUser);
-        
-        if (parsedUser && parsedUser.email) {
-          setUser(parsedUser);
-          setIsLoggedIn(true);
-          console.log('User is already logged in');
-        } else {
-          console.warn('Invalid stored user data format');
-          localStorage.removeItem('user');
-        }
-      }
-    } catch (error) {
-      console.error('Error handling stored user data:', error);
-      localStorage.removeItem('user');
-    }
-
     // Load Google OAuth script only if not logged in
-    if (!isLoggedIn) {
+    if (!isAuthenticated) {
       const loadGoogleScript = () => {
         const script = document.createElement('script');
         script.src = 'https://accounts.google.com/gsi/client';
@@ -89,13 +66,10 @@ const Login = () => {
 
       loadGoogleScript();
     }
-  }, [isLoggedIn]);
+  }, [isAuthenticated]);
 
   const handleLogout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('googleToken');
-    setUser(null);
-    setIsLoggedIn(false);
+    logout();
     navigate('/login');
   };
 
@@ -138,43 +112,17 @@ const Login = () => {
         throw new Error('Missing required user data');
       }
 
-      // Store user data and Google token in localStorage
-      try {
-        const userDataToStore = {
-          name: userData.name,
-          email: userData.email,
-          picture: userData.picture
-        };
-        
-        console.log("Attempting to store user data:", userDataToStore);
-        
-        // Clear existing data first
-        localStorage.removeItem('user');
-        localStorage.removeItem('googleToken');
-        
-        // Store new data
-        localStorage.setItem('user', JSON.stringify(userDataToStore));
-        localStorage.setItem('googleToken', credentialResponse.credential);
-        
-        // Verify storage
-        const storedData = localStorage.getItem('user');
-        const storedToken = localStorage.getItem('googleToken');
-        console.log("Verified stored data:", storedData);
-        console.log("Verified stored token:", storedToken ? 'Token stored' : 'No token stored');
-        
-        if (!storedData || !storedToken) {
-          throw new Error('Failed to verify data storage');
-        }
-        
-        setUser(userDataToStore);
-        console.log("User state updated successfully");
-        
-        // Navigate after successful storage
-        navigate('/');
-      } catch (storageError) {
-        console.error('Error storing user data:', storageError);
-        setLoginError('Failed to save login information. Please try again.');
-      }
+      // Store user data and Google token
+      const userDataToStore = {
+        name: userData.name,
+        email: userData.email,
+        picture: userData.picture
+      };
+      
+      localStorage.setItem('googleToken', credentialResponse.credential);
+      login(userDataToStore);
+      navigate('/');
+      
     } catch (error) {
       console.error('Login error:', error);
       if (error.code === 'ERR_NETWORK') {
@@ -185,7 +133,7 @@ const Login = () => {
     }
   };
 
-  if (isLoggedIn) {
+  if (isAuthenticated) {
     return (
       <div className="login-container">
         <div className="login-box">
@@ -249,20 +197,8 @@ const Login = () => {
             />
           </div>
 
-          <button type="submit" className="login-button">
-            Sign In
-          </button>
+          <div id="googleButton" className="google-signin-button"></div>
         </form>
-
-        <div className="divider">
-          <span>or</span>
-        </div>
-
-        <div id="googleButton"></div>
-
-        <p className="signup-link">
-          Don't have an account? <a href="/signup">Sign up</a>
-        </p>
       </div>
     </div>
   );

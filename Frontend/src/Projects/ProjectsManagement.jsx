@@ -61,7 +61,7 @@ const ProjectsManagement = () => {
   ];
 
   const handleProjectClick = (projectId) => {
-    navigate(`/Dashboard/${projectId}`);
+    navigate(`GroupDashboard/${projectId}`);
   };
 
   const ProjectCard = ({ project, isGroup }) => (

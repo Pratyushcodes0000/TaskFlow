@@ -4,6 +4,7 @@ const http = require('http');
 const cors = require('cors');
 //ALL ROUTES
 const loginrouter = require('./Router/LoginRoutes');
+const AddProjectRoute = require('./Router/AddprojectRoutes');
 
 const app = express();
 connectDB();
@@ -21,6 +22,7 @@ app.use(express.urlencoded({extended: true}));
 
 //Routes
 app.use('/api', loginrouter);
+app.use('/api', AddProjectRoute)
 
 // Error handling middleware
 app.use((err, req, res, next) => {

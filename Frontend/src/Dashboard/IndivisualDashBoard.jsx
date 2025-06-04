@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { FaPlus, FaEllipsisV, FaClock, FaUser, FaTag } from 'react-icons/fa';
-import './IndivisualDashboard.css';
+import './GroupDashboard.css';
 
-const Dashboard = () => {
+const IndivisualDashboard = () => {
   const [columns, setColumns] = useState({
     todo: {
       title: 'TO-DO',
@@ -77,7 +77,6 @@ const Dashboard = () => {
     title: '',
     description: '',
     priority: 'medium',
-    assignee: '',
     dueDate: '',
     tags: []
   });
@@ -274,15 +273,6 @@ const Dashboard = () => {
                 </select>
               </div>
               <div className="form-group">
-                <label>Assignee</label>
-                <input
-                  type="text"
-                  value={newTask.assignee}
-                  onChange={(e) => setNewTask({...newTask, assignee: e.target.value})}
-                  required
-                />
-              </div>
-              <div className="form-group">
                 <label>Due Date</label>
                 <input
                   type="date"
@@ -305,4 +295,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default IndivisualDashboard;

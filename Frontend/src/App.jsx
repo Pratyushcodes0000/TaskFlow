@@ -4,7 +4,7 @@ import LandingPage from './LandingPage/LandingPage';
 import Login from './Auth/Login';
 import ProjectsManagement from './Projects/ProjectsManagement';
 import NewProject from './Projects/NewProject';
-import Dashboard from './Dashboard/IndivisualDashBoard'
+import GroupDashboard from './Dashboard/GroupDashboard'
 import Header from './LandingPage/Header';
 import './App.css';
 
@@ -17,7 +17,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/ProjectsManagement" element={<ProjectsManagement />} />
         <Route path="/NewProject" element={<NewProject />} />
-        <Route path="/Dashboard" element={<Dashboard />} />
+        <Route path="/projectsManagement/GroupDashboard" element={<GroupDashboard />} />
       </Routes>
     </Router>
   );

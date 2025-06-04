@@ -1,13 +1,13 @@
-const express = require('express')
+const express = require('express');
 const router = express.Router();
 
 //controller
 const IndProjectController = require('../controller/IndProjectController');
 
 //Routes
-router.post('/addproject', IndProjectController.createTask);
-router.get('/project/:projectId', IndProjectController.getProjectTasks);
-router.put('/project/:taskId/status', IndProjectController.updateTaskStatus);
-router.delete('/project/:taskId', IndProjectController.deleteTask);
+router.post('/addproject', IndProjectController.createProject);
+router.get('/getAllProject', IndProjectController.getAllProject);
+router.put('/project', IndProjectController.updateProject);
+router.delete('/project/', IndProjectController.deleteProject);
 
 module.exports = router;

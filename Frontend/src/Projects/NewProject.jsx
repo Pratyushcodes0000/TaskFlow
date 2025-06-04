@@ -60,7 +60,7 @@ const NewProject = () => {
     e.preventDefault();
     if (validateForm()) {
       try {
-        const response = await axios.post('http://localhost:8000/api/addtask', {
+        const response = await axios.post('http://localhost:8000/api/addproject', {
           title: formData.title,
           description: formData.description,
           priority: formData.priority,

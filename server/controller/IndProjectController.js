@@ -1,9 +1,9 @@
-const Task = require('../models/Task');
-const Project = require('../models/Project');
+const Task = require('../Model/Task');
+const Project = require('../Model/IndividualProject');
 const User = require('../models/User');
 
-const taskController = {
+exports.taskController = {
    
 };
 
-module.exports = taskController;
+

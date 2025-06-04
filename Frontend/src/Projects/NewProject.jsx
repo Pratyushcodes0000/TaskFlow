@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaCalendarAlt, FaUsers, FaChartLine } from 'react-icons/fa';
 import './NewProject.css';
@@ -7,7 +7,7 @@ import axios from 'axios';
 const NewProject = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    name: '',
+    title: '',
     description: '',
     startDate: '',
     dueDate: '',
@@ -15,7 +15,8 @@ const NewProject = () => {
     status: 'planning',
     type: 'group',
     members: [],
-    tasks: []
+    tasks: [],
+    tags: []
   });
 
   const [errors, setErrors] = useState({});
@@ -37,8 +38,8 @@ const NewProject = () => {
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.name.trim()) {
-      newErrors.name = 'Project name is required';
+    if (!formData.title.trim()) {
+      newErrors.title = 'Project title is required';
     }
     if (!formData.description.trim()) {
       newErrors.description = 'Project description is required';
@@ -60,20 +61,64 @@ const NewProject = () => {
     e.preventDefault();
     if (validateForm()) {
       try {
-        const response = await axios.post('http://localhost:8000/api/addproject', {
-          title: formData.title,
-          description: formData.description,
-          priority: formData.priority,
-          dueDate: formData.dueDate,
-          assigneeId: formData.assignee,
-          projectId: formData.projectId,
-          tags: formData.tags
-        });
-        console.log('Project data:', formData);
-        console.log(response.data);
-        navigate('/ProjectsManagement');
+        const token = localStorage.getItem('token');
+        const user = localStorage.getItem('user');
+        const googleToken = localStorage.getItem('googleToken');
+        const authToken = token || googleToken;
+
+        if (!authToken) {
+          console.error('No authentication token found');
+          // Clear any existing invalid session data
+          localStorage.removeItem('token');
+          localStorage.removeItem('googleToken');
+          localStorage.removeItem('user');
+          navigate('/login');
+          return;
+        }
+
+        const response = await axios.post('http://localhost:8000/api/addproject', 
+          {
+            title: formData.title,
+            description: formData.description,
+            priority: formData.priority,
+            dueDate: formData.dueDate,
+            startDate: formData.startDate,
+            status: formData.status,
+            type: formData.type,
+            tags: formData.tags || []
+          },
+          {
+            headers: {
+              'Authorization': `Bearer ${authToken}`,
+              'Content-Type': 'application/json'
+            },
+            withCredentials: true
+          }
+        );
+
+        if (response.data.success) {
+          navigate('/ProjectsManagement');
+        } else {
+          console.error('Failed to create project:', response.data.message);
+          setErrors(prev => ({
+            ...prev,
+            submit: response.data.message || 'Failed to create project'
+          }));
+        }
       } catch (error) {
         console.error('Error creating project:', error);
+        if (error.response?.status === 401) {
+          // Clear invalid session data
+          localStorage.removeItem('token');
+          localStorage.removeItem('googleToken');
+          localStorage.removeItem('user');
+          navigate('/login');
+        } else {
+          setErrors(prev => ({
+            ...prev,
+            submit: error.response?.data?.message || 'An error occurred while creating the project'
+          }));
+        }
       }
     }
   };
@@ -92,17 +137,17 @@ const NewProject = () => {
         <div className="form-section">
           <h2>Project Details</h2>
           <div className="form-group">
-            <label htmlFor="name">Project Name *</label>
+            <label htmlFor="title">Project Title *</label>
             <input
               type="text"
-              id="name"
-              name="name"
-              value={formData.name}
+              id="title"
+              name="title"
+              value={formData.title}
               onChange={handleChange}
-              placeholder="Enter project name"
-              className={errors.name ? 'error' : ''}
+              placeholder="Enter project title"
+              className={errors.title ? 'error' : ''}
             />
-            {errors.name && <span className="error-message">{errors.name}</span>}
+            {errors.title && <span className="error-message">{errors.title}</span>}
           </div>
 
           <div className="form-group">

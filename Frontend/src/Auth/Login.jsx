@@ -58,7 +58,10 @@ const Login = () => {
               client_id: clientId,
               callback: handleGoogleLogin,
               auto_select: false,
-              cancel_on_tap_outside: true
+              cancel_on_tap_outside: true,
+              context: 'signin',
+              ux_mode: 'popup',
+              origin: window.location.origin
             });
 
             window.google.accounts.id.renderButton(
@@ -68,7 +71,8 @@ const Login = () => {
                 size: 'large', 
                 width: '100%',
                 text: 'continue_with',
-                shape: 'rectangular'
+                shape: 'rectangular',
+                logo_alignment: 'center'
               }
             );
           } catch (error) {
@@ -89,6 +93,7 @@ const Login = () => {
 
   const handleLogout = () => {
     localStorage.removeItem('user');
+    localStorage.removeItem('googleToken');
     setUser(null);
     setIsLoggedIn(false);
     navigate('/login');
@@ -113,15 +118,15 @@ const Login = () => {
         }
       );
       
-      console.log('Server response:', res.data); // Debug log
+      console.log('Server response:', res.data);
       
       if (!res.data || !res.data.user) {
-        console.error('Invalid server response:', res.data); // Debug log
+        console.error('Invalid server response:', res.data);
         throw new Error('Invalid response from server');
       }
 
       const userData = res.data.user;
-      console.log("Received user data:", userData); // Debug log
+      console.log("Received user data:", userData);
 
       // Verify required fields
       if (!userData.name || !userData.email || !userData.picture) {
@@ -133,7 +138,7 @@ const Login = () => {
         throw new Error('Missing required user data');
       }
 
-      // Store user data in localStorage
+      // Store user data and Google token in localStorage
       try {
         const userDataToStore = {
           name: userData.name,
@@ -141,24 +146,28 @@ const Login = () => {
           picture: userData.picture
         };
         
-        console.log("Attempting to store user data:", userDataToStore); // Debug log
+        console.log("Attempting to store user data:", userDataToStore);
         
         // Clear existing data first
         localStorage.removeItem('user');
+        localStorage.removeItem('googleToken');
         
         // Store new data
         localStorage.setItem('user', JSON.stringify(userDataToStore));
+        localStorage.setItem('googleToken', credentialResponse.credential);
         
         // Verify storage
         const storedData = localStorage.getItem('user');
-        console.log("Verified stored data:", storedData); // Debug log
+        const storedToken = localStorage.getItem('googleToken');
+        console.log("Verified stored data:", storedData);
+        console.log("Verified stored token:", storedToken ? 'Token stored' : 'No token stored');
         
-        if (!storedData) {
+        if (!storedData || !storedToken) {
           throw new Error('Failed to verify data storage');
         }
         
         setUser(userDataToStore);
-        console.log("User state updated successfully"); // Debug log
+        console.log("User state updated successfully");
         
         // Navigate after successful storage
         navigate('/');

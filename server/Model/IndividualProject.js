@@ -3,19 +3,24 @@ const mongoose = require('mongoose');
 const IndprojectSchema = new mongoose.Schema({
     title: {
         type: String,
-        required: [true, 'Project name is required'],
+        required: [true, 'Project title is required'],
         trim: true,
-        minlength: [3, 'Project name must be at least 3 characters long']
+        minlength: [3, 'Project title must be at least 3 characters long']
     },
     description: {
         type: String,
         required: [true, 'Project description is required'],
         trim: true
     },
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: [true, 'User ID is required']
+    },
     type: {
         type: String,
-        enum: 'individual',
-        required: [true, 'Project type is required']
+        enum: ['individual', 'group'],
+        default: 'individual'
     },
     status: {
         type: String,
@@ -41,10 +46,26 @@ const IndprojectSchema = new mongoose.Schema({
         max: 100,
         default: 0
     },
+    completedTasks: {
+        type: Number,
+        default: 0
+    },
+    totalTasks: {
+        type: Number,
+        default: 0
+    },
+    members: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }],
+    tasks: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Task'
+    }],
     tags: [{
         type: String,
         trim: true
-    }], 
+    }],
     completedAt: {
         type: Date
     }
@@ -52,8 +73,6 @@ const IndprojectSchema = new mongoose.Schema({
     timestamps: true
 });
 
-
-
-const IndProject = mongoose.model('Project', IndprojectSchema); 
+const IndProject = mongoose.model('Project', IndprojectSchema);
 
 module.exports = IndProject;

@@ -4,14 +4,14 @@ const http = require('http');
 const cors = require('cors');
 //ALL ROUTES
 const loginrouter = require('./Router/LoginRoutes');
-const AddIndProjectRoute = require('./Router/AddIndprojectRoutes');
+const AddIndProjectRoute = require('./Router/AddIndProjectRoute');
 
 const app = express();
 connectDB();
 
 //Global middleware
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000'],
+  origin: 'http://localhost:5173', // Your frontend URL
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -22,7 +22,7 @@ app.use(express.urlencoded({extended: true}));
 
 //Routes
 app.use('/api', loginrouter);
-app.use('/api', AddIndProjectRoute)
+app.use('/api', AddIndProjectRoute);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

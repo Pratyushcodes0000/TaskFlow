@@ -48,7 +48,7 @@ const ProjectsManagement = () => {
   };
 
   const ProjectCard = ({ project, isGroup }) => {
-    console.log('Project data in card:', project);
+    
     return (
       <div 
         className="project-card"

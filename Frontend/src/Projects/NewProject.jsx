@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaCalendarAlt, FaUsers, FaChartLine } from 'react-icons/fa';
 import './NewProject.css';
+import axios from 'axios';
 
 const NewProject = () => {
   const navigate = useNavigate();
@@ -59,8 +60,17 @@ const NewProject = () => {
     e.preventDefault();
     if (validateForm()) {
       try {
-        // TODO: Add API call to create project
+        const response = await axios.post('http://localhost:8000/api/addtask', {
+          title: formData.title,
+          description: formData.description,
+          priority: formData.priority,
+          dueDate: formData.dueDate,
+          assigneeId: formData.assignee,
+          projectId: formData.projectId,
+          tags: formData.tags
+        });
         console.log('Project data:', formData);
+        console.log(response.data);
         navigate('/ProjectsManagement');
       } catch (error) {
         console.error('Error creating project:', error);

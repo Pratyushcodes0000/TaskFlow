@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { FaPlus, FaEllipsisV, FaClock, FaUser, FaTag } from 'react-icons/fa';
 import './GroupDashboard.css';
+import axios from 'axios';
 
 const GroupDashboard = () => {
   const [columns, setColumns] = useState({
@@ -122,31 +123,50 @@ const GroupDashboard = () => {
     }
   };
 
-  const handleAddTask = () => {
-    const newTaskId = Date.now().toString();
-    const updatedColumns = {
-      ...columns,
-      todo: {
-        ...columns.todo,
-        items: [
-          ...columns.todo.items,
-          {
-            id: newTaskId,
-            ...newTask
+  const handleAddTask = async () => {
+    try {
+      const taskData = {
+        title: newTask.title,
+        description: newTask.description,
+        priority: newTask.priority,
+        dueDate: newTask.dueDate,
+        assigneeId: newTask.assignee,
+        projectId: projectId, // You'll need to pass this as a prop
+        tags: newTask.tags
+      };
+
+      const response = await axios.post('http://localhost:8000/api/addtask', taskData);
+      
+      if (response.data.success) {
+        const newTaskId = response.data.data._id;
+        const updatedColumns = {
+          ...columns,
+          todo: {
+            ...columns.todo,
+            items: [
+              ...columns.todo.items,
+              {
+                id: newTaskId,
+                ...newTask
+              }
+            ]
           }
-        ]
+        };
+        setColumns(updatedColumns);
+        setShowNewTaskModal(false);
+        setNewTask({
+          title: '',
+          description: '',
+          priority: 'medium',
+          assignee: '',
+          dueDate: '',
+          tags: []
+        });
       }
-    };
-    setColumns(updatedColumns);
-    setShowNewTaskModal(false);
-    setNewTask({
-      title: '',
-      description: '',
-      priority: 'medium',
-      assignee: '',
-      dueDate: '',
-      tags: []
-    });
+    } catch (error) {
+      console.error('Error creating task:', error);
+      // Handle error (show error message to user)
+    }
   };
 
   const TaskCard = ({ task }) => (

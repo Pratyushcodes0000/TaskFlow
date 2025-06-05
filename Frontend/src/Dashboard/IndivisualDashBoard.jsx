@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { FaPlus, FaEllipsisV, FaClock, FaUser, FaTag } from 'react-icons/fa';
+import { FaPlus, FaEllipsisV, FaClock, FaUser, FaTag, FaTrash, FaPlay, FaStop, FaInfoCircle } from 'react-icons/fa';
 import './IndivisualDashboard.css';
 import axios from 'axios';
 
@@ -42,6 +42,10 @@ const IndivisualDashboard = () => {
     project: ID,
     tags: []
   });
+
+  const [activeDropdown, setActiveDropdown] = useState(null);
+  const [taskDetails, setTaskDetails] = useState(null);
+  const [showTaskDetailsModal, setShowTaskDetailsModal] = useState(false);
 
   const organizeTasks = (tasks) => {
     const todoTasks = tasks.filter(task => task.status === 'todo');
@@ -292,13 +296,125 @@ const IndivisualDashboard = () => {
     });
   };
 
+  const handleTaskAction = async (taskId, action) => {
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('googleToken');
+      if (!token) {
+        console.error('No authentication token found');
+        return;
+      }
+
+      switch (action) {
+        case 'delete':
+          const deleteResponse = await axios.delete(
+            `http://localhost:8000/api/deleteTask/${taskId}`,
+            {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            }
+          );
+          if (deleteResponse.data.success) {
+            fetchTask(ID);
+          }
+          break;
+
+        case 'start':
+          const startResponse = await axios.patch(
+            `http://localhost:8000/api/updateTaskStatus/${taskId}`,
+            {
+              status: 'inProgress',
+              projectId: ID,
+              startedAt: new Date()
+            },
+            {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            }
+          );
+          if (startResponse.data.success) {
+            fetchTask(ID);
+          }
+          break;
+
+        case 'end':
+          const endResponse = await axios.patch(
+            `http://localhost:8000/api/updateTaskStatus/${taskId}`,
+            {
+              status: 'completed',
+              projectId: ID,
+              completedAt: new Date()
+            },
+            {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            }
+          );
+          if (endResponse.data.success) {
+            fetchTask(ID);
+          }
+          break;
+
+        case 'details':
+          setTaskDetails(data.find(task => task._id === taskId));
+          setShowTaskDetailsModal(true);
+          break;
+      }
+    } catch (error) {
+      console.error(`Error performing ${action} action:`, error.response?.data || error.message);
+    }
+    setActiveDropdown(null);
+  };
+
   const TaskCard = ({ task }) => (
     <div className="task-card">
       <div className="task-header">
         <h3>{task.title}</h3>
-        <button className="task-menu">
-          <FaEllipsisV />
-        </button>
+        <div className="task-menu-container">
+          <button 
+            className="task-menu"
+            onClick={(e) => {
+              e.stopPropagation();
+              setActiveDropdown(activeDropdown === task._id ? null : task._id);
+            }}
+          >
+            <FaEllipsisV />
+          </button>
+          {activeDropdown === task._id && (
+            <div className="task-dropdown">
+              <button 
+                onClick={() => handleTaskAction(task._id, 'delete')}
+                className="dropdown-item delete"
+              >
+                <FaTrash /> Delete Task
+              </button>
+              {task.status === 'todo' && (
+                <button 
+                  onClick={() => handleTaskAction(task._id, 'start')}
+                  className="dropdown-item start"
+                >
+                  <FaPlay /> Start Task
+                </button>
+              )}
+              {task.status === 'inProgress' && (
+                <button 
+                  onClick={() => handleTaskAction(task._id, 'end')}
+                  className="dropdown-item end"
+                >
+                  <FaStop /> End Task
+                </button>
+              )}
+              <button 
+                onClick={() => handleTaskAction(task._id, 'details')}
+                className="dropdown-item details"
+              >
+                <FaInfoCircle /> See Full Details
+              </button>
+            </div>
+          )}
+        </div>
       </div>
       <p className="task-description">{task.description}</p>
       <div className="task-meta">
@@ -328,6 +444,66 @@ const IndivisualDashboard = () => {
       </div>
     </div>
   );
+
+  const TaskDetailsModal = ({ task, onClose }) => {
+    if (!task) return null;
+
+    return (
+      <div className="modal-overlay">
+        <div className="modal-content task-details-modal">
+          <div className="modal-header">
+            <h2>{task.title}</h2>
+            <button className="close-button" onClick={onClose}>×</button>
+          </div>
+          <div className="task-details-content">
+            <div className="detail-section">
+              <h3>Description</h3>
+              <p>{task.description}</p>
+            </div>
+            <div className="detail-section">
+              <h3>Priority</h3>
+              <span className={`priority-badge ${task.priority}`}>
+                {task.priority}
+              </span>
+            </div>
+            <div className="detail-section">
+              <h3>Due Date</h3>
+              <p>{new Date(task.dueDate).toLocaleDateString()}</p>
+            </div>
+            <div className="detail-section">
+              <h3>Status</h3>
+              <span className={`status-badge ${task.status}`}>
+                {task.status}
+              </span>
+            </div>
+            <div className="detail-section">
+              <h3>Tags</h3>
+              <div className="tags-container">
+                {task.tags.map((tag, index) => (
+                  <span key={index} className="task-tag">
+                    <FaTag />
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+            {task.startedAt && (
+              <div className="detail-section">
+                <h3>Started At</h3>
+                <p>{new Date(task.startedAt).toLocaleString()}</p>
+              </div>
+            )}
+            {task.completedAt && (
+              <div className="detail-section">
+                <h3>Completed At</h3>
+                <p>{new Date(task.completedAt).toLocaleString()}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="dashboard-container">
@@ -448,6 +624,16 @@ const IndivisualDashboard = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {showTaskDetailsModal && (
+        <TaskDetailsModal 
+          task={taskDetails} 
+          onClose={() => {
+            setShowTaskDetailsModal(false);
+            setTaskDetails(null);
+          }} 
+        />
       )}
     </div>
   );

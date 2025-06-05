@@ -160,3 +160,47 @@ exports.updateTaskStatus = async (req, res) => {
         });
     }
 };
+
+exports.deleteTask = async (req, res) => {
+    try {
+        const { taskId } = req.params;
+
+        // Validate task ID
+        if (!taskId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Task ID is required'
+            });
+        }
+
+        // Find the task to get the project ID
+        const task = await Task.findById(taskId);
+        if (!task) {
+            return res.status(404).json({
+                success: false,
+                message: 'Task not found'
+            });
+        }
+
+        // Delete the task
+        await Task.findByIdAndDelete(taskId);
+
+        // Update project's task count
+        await Project.findByIdAndUpdate(task.projectID, {
+            $inc: { totalTasks: -1 }
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: 'Task deleted successfully'
+        });
+
+    } catch (error) {
+        console.error('Error in deleteTask:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error',
+            error: error.message
+        });
+    }
+};

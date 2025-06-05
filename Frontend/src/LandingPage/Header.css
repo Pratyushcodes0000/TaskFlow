@@ -69,8 +69,8 @@
 }
 
 .profile-picture {
-  width: 62px;
-  height: 62px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid #646cff;
@@ -109,43 +109,44 @@
   z-index: 1000;
 }
 
-.profile-container:hover .profile-dropdown {
+.profile-container:hover .profile-dropdown,
+.profile-dropdown.show {
   display: block;
 }
 
 .profile-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
   margin-bottom: 1rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid #404040;
 }
 
 .profile-name {
+  display: block;
   color: #ffffff;
+  font-size: 1.1rem;
   font-weight: 500;
-  font-size: 1rem;
+  margin-bottom: 0.3rem;
 }
 
 .profile-email {
+  display: block;
   color: #a0a0a0;
   font-size: 0.9rem;
 }
 
-.profile-dropdown .logout-button {
+.logout-button {
   width: 100%;
+  padding: 0.75rem;
   background-color: #dc3545;
   color: white;
-  padding: 0.5rem;
   border: none;
-  border-radius: 4px;
-  font-size: 0.9rem;
+  border-radius: 6px;
+  font-size: 1rem;
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
 
-.profile-dropdown .logout-button:hover {
+.logout-button:hover {
   background-color: #c82333;
 }
 

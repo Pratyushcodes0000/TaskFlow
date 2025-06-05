@@ -6,6 +6,7 @@ import LandingPage from './LandingPage/LandingPage';
 import Login from './Auth/Login';
 import ProjectsManagement from './Projects/ProjectsManagement';
 import NewProject from './Projects/NewProject';
+import IndivisualDashboard from './Dashboard/IndivisualDashBoard';
 import GroupDashboard from './Dashboard/GroupDashboard'
 import Header from './LandingPage/Header';
 import './App.css';
@@ -35,10 +36,18 @@ function App() {
             } 
           />
           <Route 
-            path="/projectsManagement/GroupDashboard" 
+            path="/projectsManagement/GroupDashboard/:ID" 
             element={
               <ProtectedRoute>
                 <GroupDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/projectsManagement/IndivisualDashboard/:ID" 
+            element={
+              <ProtectedRoute>
+                <IndivisualDashboard/> 
               </ProtectedRoute>
             } 
           />

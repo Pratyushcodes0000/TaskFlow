@@ -1,5 +1,5 @@
 const Task = require('../Model/Task');
-const Project = require('../Model/IndividualProject');
+const Project = require('../Model/Project');
 const User = require('../Model/User');
 
 const getAllProject = async (req, res) => {
@@ -28,6 +28,7 @@ const getAllProject = async (req, res) => {
         });
     }
 };
+
 
 const createProject = async (req, res) => {
     try {

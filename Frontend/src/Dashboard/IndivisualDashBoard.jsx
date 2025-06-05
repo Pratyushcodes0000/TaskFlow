@@ -1,74 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { FaPlus, FaEllipsisV, FaClock, FaUser, FaTag } from 'react-icons/fa';
-import './GroupDashboard.css';
+import './IndivisualDashboard.css';
+import axios from 'axios';
 
 const IndivisualDashboard = () => {
+  const { ID } = useParams();
+
+  const[todo,setTodo] = useState([]);
+  const[inProgress,setInprogress] = useState([]);
+  const[completed,setCompleted] = useState([]);
+  const[review,setReview] = useState([]);
+  const[data,setData] = useState(null);
+
   const [columns, setColumns] = useState({
     todo: {
       title: 'TO-DO',
-      items: [
-        {
-          id: '1',
-          title: 'Design System Setup',
-          description: 'Create a consistent design system for the project',
-          priority: 'high',
-          assignee: 'John Doe',
-          dueDate: '2024-03-25',
-          tags: ['Design', 'UI']
-        },
-        {
-          id: '2',
-          title: 'API Integration',
-          description: 'Integrate backend APIs with frontend',
-          priority: 'medium',
-          assignee: 'Jane Smith',
-          dueDate: '2024-03-28',
-          tags: ['Backend', 'API']
-        }
-      ]
+      items: todo
     },
     inProgress: {
       title: 'In Progress',
-      items: [
-        {
-          id: '3',
-          title: 'User Authentication',
-          description: 'Implement OAuth2 authentication flow',
-          priority: 'high',
-          assignee: 'Mike Johnson',
-          dueDate: '2024-03-26',
-          tags: ['Security', 'Auth']
-        }
-      ]
+      items: inProgress
     },
     completed: {
       title: 'Completed',
-      items: [
-        {
-          id: '4',
-          title: 'Project Setup',
-          description: 'Initial project configuration and setup',
-          priority: 'low',
-          assignee: 'Sarah Wilson',
-          dueDate: '2024-03-20',
-          tags: ['Setup']
-        }
-      ]
+      items: completed
     },
     review: {
       title: 'Review',
-      items: [
-        {
-          id: '5',
-          title: 'Database Schema',
-          description: 'Review and optimize database schema',
-          priority: 'medium',
-          assignee: 'Alex Brown',
-          dueDate: '2024-03-27',
-          tags: ['Database']
-        }
-      ]
+      items: review
     }
   });
 
@@ -78,8 +39,158 @@ const IndivisualDashboard = () => {
     description: '',
     priority: 'medium',
     dueDate: '',
+    project: ID,
     tags: []
   });
+
+  const organizeTasks = (tasks) => {
+    const todoTasks = tasks.filter(task => task.status === 'todo');
+    const inProgressTasks = tasks.filter(task => task.status === 'inProgress');
+    const completedTasks = tasks.filter(task => task.status === 'completed');
+    const reviewTasks = tasks.filter(task => task.status === 'review');
+
+    setTodo(todoTasks);
+    setInprogress(inProgressTasks);
+    setCompleted(completedTasks);
+    setReview(reviewTasks);
+
+    setColumns({
+      todo: {
+        title: 'TO-DO',
+        items: todoTasks
+      },
+      inProgress: {
+        title: 'In Progress',
+        items: inProgressTasks
+      },
+      completed: {
+        title: 'Completed',
+        items: completedTasks
+      },
+      review: {
+        title: 'Review',
+        items: reviewTasks
+      }
+    });
+  };
+
+  const fetchTask = async (projectId) => {
+    if (!projectId) {
+      console.error('Project ID is missing for fetchTask');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('googleToken');
+      if (!token) {
+        console.error('No authentication token found');
+        return;
+      }
+
+      const response = await axios.get(`http://localhost:8000/api/GetTask/${projectId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.data.success) {
+        setData(response.data.data);
+        organizeTasks(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching tasks:', error.response?.data || error.message);
+      if (error.response?.status === 401) {
+        // Handle unauthorized error - maybe redirect to login
+        console.error('Authentication failed. Please log in again.');
+      }
+    }
+  };
+
+  // Add useEffect to fetch tasks when component mounts
+  useEffect(() => {
+    if (ID) {
+      fetchTask(ID);
+    }
+  }, [ID]);
+
+  // Add useEffect to log projectId when it changes
+  useEffect(() => {
+    console.log('Current project ID:', ID);
+  }, [ID]);
+
+  const createTask = async (e) => {
+    e.preventDefault();
+    
+    // Validate projectId
+    if (!ID) {
+      console.error('Project ID is missing');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('googleToken');
+      if (!token) {
+        console.error('No authentication token found');
+        return;
+      }
+
+      const response = await axios.post(`http://localhost:8000/api/createTask/${ID}`,
+        {
+          title: newTask.title,
+          description: newTask.description,
+          priority: newTask.priority,
+          dueDate: newTask.dueDate,
+          projectId: ID,
+          tags: newTask.tags,
+          status: 'todo',
+          type: 'individual'
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+      
+      if (response.data.success) {
+        // Refresh tasks after creating new one
+        fetchTask(ID);
+        setShowNewTaskModal(false);
+        setNewTask({
+          title: '',
+          description: '',
+          priority: 'medium',
+          dueDate: '',
+          project: ID,
+          tags: []
+        });
+      }
+    } catch (error) {
+      console.error('Error creating task:', error.response?.data || error.message);
+      if (error.response?.status === 401) {
+        // Handle unauthorized error - maybe redirect to login
+        console.error('Authentication failed. Please log in again.');
+      }
+    }
+  };
+
+  const availableTags = ['Design', 'UI', 'Backend', 'Frontend', 'Auth', 'Security', 'Setup','Review'];
+
+  const handleTagChange = (tag) => {
+    setNewTask(prev => {
+      const currentTags = [...prev.tags];
+      if (currentTags.includes(tag)) {
+        return {
+          ...prev,
+          tags: currentTags.filter(t => t !== tag)
+        };
+      } else {
+        return {
+          ...prev,
+          tags: [...currentTags, tag]
+        };
+      }
+    });
+  };
 
   const onDragEnd = (result) => {
     if (!result.destination) return;
@@ -212,8 +323,8 @@ const IndivisualDashboard = () => {
                   >
                     {column.items.map((task, index) => (
                       <Draggable
-                        key={task.id}
-                        draggableId={task.id}
+                        key={task._id || task.id}
+                        draggableId={task._id || task.id}
                         index={index}
                       >
                         {(provided) => (
@@ -240,10 +351,7 @@ const IndivisualDashboard = () => {
         <div className="modal-overlay">
           <div className="modal-content">
             <h2>Add New Task</h2>
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              handleAddTask();
-            }}>
+            <form onSubmit={createTask}>
               <div className="form-group">
                 <label>Title</label>
                 <input
@@ -281,11 +389,28 @@ const IndivisualDashboard = () => {
                   required
                 />
               </div>
+              <div className="form-group">
+                <label>Tags</label>
+                <div className="tags-container">
+                  {availableTags.map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      className={`tag-option ${newTask.tags.includes(tag) ? 'selected' : ''}`}
+                      onClick={() => handleTagChange(tag)}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div className="modal-actions">
                 <button type="button" onClick={() => setShowNewTaskModal(false)}>
                   Cancel
                 </button>
-                <button type="submit">Add Task</button>
+                <button type="submit">
+                  Create Task
+                </button>
               </div>
             </form>
           </div>

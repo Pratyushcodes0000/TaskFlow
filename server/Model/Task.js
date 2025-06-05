@@ -26,7 +26,7 @@ const taskSchema = new mongoose.Schema({
         type: Date,
         required: [true, 'Due date is required']
     },
-    project: {
+    projectID: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Project',
         required: [true, 'Project ID is required']
@@ -48,30 +48,7 @@ const taskSchema = new mongoose.Schema({
         type: String,
         enum: ['individual', 'group'],
         required: [true, 'Task type is required']
-    },
-    comments: [{
-        user: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        },
-        text: {
-            type: String,
-            required: true
-        },
-        createdAt: {
-            type: Date,
-            default: Date.now
-        }
-    }],
-    attachments: [{
-        name: String,
-        url: String,
-        type: String,
-        uploadedAt: {
-            type: Date,
-            default: Date.now
-        }
-    }],
+    }, 
     completedAt: {
         type: Date
     }

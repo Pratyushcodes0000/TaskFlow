@@ -5,9 +5,9 @@ import { useAuth } from './AuthContext';
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
 
-  if (loading) {
+  if (loading){
     return <div>Loading...</div>;
-  }
+  };
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
@@ -16,4 +16,4 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
-export default ProtectedRoute; 
+export default ProtectedRoute;

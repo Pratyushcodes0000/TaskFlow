@@ -22,7 +22,7 @@ const ProjectsManagement = () => {
 
   const fetchProjects = async (token) => {
     try {
-      const response = await axios.get('http://localhost:8000/api/getAllProject', {
+      const response = await axios.get('http://localhost:8000/api/getAllProject',{
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -44,7 +44,12 @@ const ProjectsManagement = () => {
   };
 
   const handleProjectClick = (projectId) => {
-    navigate(`/GroupDashboard/${projectId}`);
+    if(activeTab === 'group'){
+      navigate(`/projectsManagement/GroupDashboard/${projectId}`);
+    }else if(activeTab === 'individual'){
+      navigate(`/projectsManagement/IndivisualDashboard/${projectId}`);
+    }
+    
   };
 
   const ProjectCard = ({ project, isGroup }) => {

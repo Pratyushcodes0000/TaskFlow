@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const IndprojectSchema = new mongoose.Schema({
+const projectSchema = new mongoose.Schema({
     title: {
         type: String,
         required: [true, 'Project title is required'],
@@ -73,6 +73,6 @@ const IndprojectSchema = new mongoose.Schema({
     timestamps: true
 });
 
-const IndProject = mongoose.model('Project', IndprojectSchema);
+const Project = mongoose.model('Project', projectSchema);
 
-module.exports = IndProject;
+module.exports = Project;

@@ -7,6 +7,7 @@ const loginrouter = require('./Router/LoginRoutes');
 const AddProjectRoute = require('./Router/AddProjectRoute');
 const TaskRoute = require('./Router/TaskRoute');
 
+
 const app = express();
 connectDB();
 
@@ -25,6 +26,7 @@ app.use(express.urlencoded({extended: true}));
 app.use('/api', loginrouter);
 app.use('/api', AddProjectRoute);
 app.use('/api',TaskRoute);
+
 
 // Error handling middleware
 app.use((err, req, res, next) => {

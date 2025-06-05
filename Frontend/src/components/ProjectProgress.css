@@ -1,0 +1,157 @@
+.progress-container {
+    background: transparent;
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.progress-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #fff;
+    margin: 0;
+}
+
+.progress-stats {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.progress-stat {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.88rem;
+    color: #e0e0e0;
+    white-space: nowrap;
+}
+
+.progress-stat svg {
+    font-size: 1rem;
+    color: #4a9eff;
+}
+
+.progress-bar-container {
+    position: relative;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 0.5rem;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.progress-bar {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease, background-color 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.2) 50%,
+        rgba(255, 255, 255, 0) 100%
+    );
+    animation: shimmer 2s infinite;
+}
+
+.progress-percentage {
+    position: absolute;
+    right: 0;
+    top: -1.5rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+/* Progress bar colors */
+.progress-bar.red {
+    background: linear-gradient(90deg, #ff4d4d, #ff6b6b);
+}
+
+.progress-bar.orange {
+    background: linear-gradient(90deg, #ffa726, #ffb74d);
+}
+
+.progress-bar.yellow {
+    background: linear-gradient(90deg, #ffd600, #ffea00);
+}
+
+.progress-bar.green {
+    background: linear-gradient(90deg, #66bb6a, #81c784);
+}
+
+.progress-bar.blue {
+    background: linear-gradient(90deg, #42a5f5, #64b5f6);
+}
+
+@keyframes shimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .progress-container {
+        padding: 1rem;
+    }
+
+    .progress-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .progress-stats {
+        width: 100%;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .progress-stat {
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .progress-stats {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .progress-stat {
+        width: 100%;
+    }
+} 

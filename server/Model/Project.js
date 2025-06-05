@@ -73,6 +73,18 @@ const projectSchema = new mongoose.Schema({
     timestamps: true
 });
 
+// Add a method to calculate progress
+projectSchema.methods.calculateProgress = function() {
+    if (this.totalTasks === 0) return 0;
+    return Math.round((this.completedTasks / this.totalTasks) * 100);
+};
+
+// Add a pre-save middleware to update progress
+projectSchema.pre('save', function(next) {
+    this.progress = this.calculateProgress();
+    next();
+});
+
 const Project = mongoose.model('Project', projectSchema);
 
 module.exports = Project;

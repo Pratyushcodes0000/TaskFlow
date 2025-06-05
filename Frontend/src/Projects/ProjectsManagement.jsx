@@ -3,6 +3,7 @@ import { FaUsers, FaUser, FaPlus, FaEllipsisV, FaCalendarAlt, FaChartLine } from
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import './ProjectsManagement.css';
+import ProjectProgress from '../components/ProjectProgress';
 
 const ProjectsManagement = () => {
   const [activeTab, setActiveTab] = useState('group');
@@ -53,7 +54,6 @@ const ProjectsManagement = () => {
   };
 
   const ProjectCard = ({ project, isGroup }) => {
-    
     return (
       <div 
         className="project-card"
@@ -81,14 +81,12 @@ const ProjectsManagement = () => {
 
         <p className="project-description">{project.description || 'No description available'}</p>
         
-        <div className="project-progress">
-          <div className="progress-bar">
-            <div 
-              className="progress-fill" 
-              style={{ width: `${project.progress || 0}%` }}
-            ></div>
-          </div>
-          <span className="progress-text">{project.progress || 0}%</span>
+        <div className="project-progress-container">
+          <ProjectProgress
+            progress={project.progress || 0}
+            totalTasks={project.totalTasks || 0}
+            completedTasks={project.completedTasks || 0}
+          />
         </div>
 
         <div className="project-details">

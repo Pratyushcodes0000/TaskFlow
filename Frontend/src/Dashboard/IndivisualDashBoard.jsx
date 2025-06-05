@@ -1,18 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { FaPlus, FaEllipsisV, FaClock, FaUser, FaTag, FaTrash, FaPlay, FaStop, FaInfoCircle } from 'react-icons/fa';
+import { FaPlus, FaEllipsisV, FaClock, FaUser, FaTag, FaTrash, FaPlay, FaStop, FaInfoCircle, FaCheck, FaCalendarAlt } from 'react-icons/fa';
 import './IndivisualDashboard.css';
 import axios from 'axios';
+import ProjectProgress from '../components/ProjectProgress';
+
 
 const IndivisualDashboard = () => {
   const { ID } = useParams();
+  const navigate = useNavigate();
 
   const[todo,setTodo] = useState([]);
   const[inProgress,setInprogress] = useState([]);
   const[completed,setCompleted] = useState([]);
   const[review,setReview] = useState([]);
   const[data,setData] = useState(null);
+  const [projectData, setProjectData] = useState(null);
 
   const [columns, setColumns] = useState({
     todo: {
@@ -109,10 +113,33 @@ const IndivisualDashboard = () => {
     }
   };
 
+  const fetchProjectData = async () => {
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('googleToken');
+      if (!token) {
+        console.error('No authentication token found');
+        return;
+      }
+
+      const response = await axios.get(`http://localhost:8000/api/getProject/${ID}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.data.success) {
+        setProjectData(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching project data:', error);
+    }
+  };
+
   // Add useEffect to fetch tasks when component mounts
   useEffect(() => {
     if (ID) {
       fetchTask(ID);
+      fetchProjectData();
     }
   }, [ID]);
 
@@ -156,8 +183,9 @@ const IndivisualDashboard = () => {
       );
       
       if (response.data.success) {
-        // Refresh tasks after creating new one
+        // Refresh tasks and project data after creating new one
         fetchTask(ID);
+        fetchProjectData();
         setShowNewTaskModal(false);
         setNewTask({
           title: '',
@@ -196,76 +224,87 @@ const IndivisualDashboard = () => {
     });
   };
 
-  const onDragEnd = async (result) => {
-    if (!result.destination) return;
+  const onDragStart = (result) => {
+    const { draggableId } = result;
+    const task = data.find(task => task._id === draggableId);
+    if (task) {
+      document.body.style.cursor = 'grabbing';
+    }
+  };
 
-    const { source, destination } = result;
-    
-    if (source.droppableId !== destination.droppableId) {
-      const sourceColumn = columns[source.droppableId];
-      const destColumn = columns[destination.droppableId];
-      const sourceItems = [...sourceColumn.items];
-      const destItems = [...destColumn.items];
-      const [removed] = sourceItems.splice(source.index, 1);
-      destItems.splice(destination.index, 0, removed);
-      
-      // Update the columns state
-      setColumns({
-        ...columns,
-        [source.droppableId]: {
-          ...sourceColumn,
-          items: sourceItems
-        },
-        [destination.droppableId]: {
-          ...destColumn,
-          items: destItems
+  const onDragEnd = (result) => {
+    const { destination, source, draggableId } = result;
+
+    if (!destination) return;
+
+    if (
+        destination.droppableId === source.droppableId &&
+        destination.index === source.index
+    ) {
+        return;
+    }
+
+    const taskId = draggableId;
+    const newStatus = destination.droppableId;
+    const oldStatus = source.droppableId;
+
+    // Get the token from localStorage - check both regular and Google tokens
+    const token = localStorage.getItem('token') || localStorage.getItem('googleToken');
+    if (!token) {
+        console.error('No authentication token found');
+        navigate('/login');
+        return;
+    }
+
+    // Optimistically update the UI
+    const updatedTasks = data.map(task => {
+        if (task._id === taskId) {
+            return { ...task, status: newStatus };
         }
-      });
+        return task;
+    });
+    setData(updatedTasks);
 
-      // Update the task status in the backend
-      try {
-        const token = localStorage.getItem('token') || localStorage.getItem('googleToken');
-        if (!token) {
-          console.error('No authentication token found');
-          return;
-        }
-
-        const response = await axios.patch(
-          `http://localhost:8000/api/updateTaskStatus/${removed._id || removed.id}`,
-          {
-            status: destination.droppableId,
+    // Update the backend
+    axios.patch(
+        `http://localhost:8000/api/updateTaskStatus/${taskId}`,
+        { 
+            status: newStatus,
             projectId: ID
-          },
-          {
+        },
+        {
             headers: {
-              'Authorization': `Bearer ${token}`
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
             }
-          }
-        );
+        }
+    )
+    .then(response => {
+        if (response.data.success) {
+            Promise.all([
+                fetchTask(ID),
+                fetchProjectData()
+            ]).catch(error => {
+                console.error('Error fetching updated data:', error);
+            });
+        } else {
+            setData(data);
+            console.error('Failed to update task status:', response.data.message);
+        }
+    })
+    .catch(error => {
+        setData(data);
+        console.error('Error updating task status:', error.response?.data || error);
+        if (error.response?.status === 401) {
+            navigate('/login');
+        }
+    });
+  };
 
-        if (!response.data.success) {
-          console.error('Failed to update task status:', response.data.message);
-          // Revert the UI change if the backend update fails
-          setColumns(columns);
-        }
-      } catch (error) {
-        console.error('Error updating task status:', error.response?.data || error.message);
-        // Revert the UI change if the backend update fails
-        setColumns(columns);
-      }
-    } else {
-      const column = columns[source.droppableId];
-      const copiedItems = [...column.items];
-      const [removed] = copiedItems.splice(source.index, 1);
-      copiedItems.splice(destination.index, 0, removed);
-      
-      setColumns({
-        ...columns,
-        [source.droppableId]: {
-          ...column,
-          items: copiedItems
-        }
-      });
+  const onDragUpdate = (update) => {
+    const { destination } = update;
+    if (destination) {
+      document.body.style.cursor = 'grabbing';
     }
   };
 
@@ -296,7 +335,7 @@ const IndivisualDashboard = () => {
     });
   };
 
-  const handleTaskAction = async (taskId, action) => {
+  const handleTaskAction = async (action, taskId) => {
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('googleToken');
       if (!token) {
@@ -316,6 +355,7 @@ const IndivisualDashboard = () => {
           );
           if (deleteResponse.data.success) {
             fetchTask(ID);
+            fetchProjectData();
           }
           break;
 
@@ -335,6 +375,7 @@ const IndivisualDashboard = () => {
           );
           if (startResponse.data.success) {
             fetchTask(ID);
+            fetchProjectData();
           }
           break;
 
@@ -354,6 +395,7 @@ const IndivisualDashboard = () => {
           );
           if (endResponse.data.success) {
             fetchTask(ID);
+            fetchProjectData();
           }
           break;
 
@@ -368,31 +410,38 @@ const IndivisualDashboard = () => {
     setActiveDropdown(null);
   };
 
-  const TaskCard = ({ task }) => (
+  const TaskCard = ({ task, dragHandleProps }) => (
     <div className="task-card">
-      <div className="task-header">
+      <div className="task-header" {...dragHandleProps}>
         <h3>{task.title}</h3>
-        <div className="task-menu-container">
-          <button 
-            className="task-menu"
+        <div className="task-actions">
+          <button
             onClick={(e) => {
               e.stopPropagation();
               setActiveDropdown(activeDropdown === task._id ? null : task._id);
             }}
+            className="task-menu"
+            title="Task Actions"
           >
             <FaEllipsisV />
           </button>
           {activeDropdown === task._id && (
             <div className="task-dropdown">
               <button 
-                onClick={() => handleTaskAction(task._id, 'delete')}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleTaskAction('delete', task._id);
+                }}
                 className="dropdown-item delete"
               >
                 <FaTrash /> Delete Task
               </button>
               {task.status === 'todo' && (
                 <button 
-                  onClick={() => handleTaskAction(task._id, 'start')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleTaskAction('start', task._id);
+                  }}
                   className="dropdown-item start"
                 >
                   <FaPlay /> Start Task
@@ -400,14 +449,20 @@ const IndivisualDashboard = () => {
               )}
               {task.status === 'inProgress' && (
                 <button 
-                  onClick={() => handleTaskAction(task._id, 'end')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleTaskAction('end', task._id);
+                  }}
                   className="dropdown-item end"
                 >
                   <FaStop /> End Task
                 </button>
               )}
               <button 
-                onClick={() => handleTaskAction(task._id, 'details')}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleTaskAction('details', task._id);
+                }}
                 className="dropdown-item details"
               >
                 <FaInfoCircle /> See Full Details
@@ -417,7 +472,7 @@ const IndivisualDashboard = () => {
         </div>
       </div>
       <p className="task-description">{task.description}</p>
-      <div className="task-meta">
+      <div className="task-footer">
         <div className="task-priority">
           <span className={`priority-badge ${task.priority}`}>
             {task.priority}
@@ -426,20 +481,6 @@ const IndivisualDashboard = () => {
         <div className="task-due-date">
           <FaClock />
           <span>{new Date(task.dueDate).toLocaleDateString()}</span>
-        </div>
-      </div>
-      <div className="task-footer">
-        <div className="task-assignee">
-          <FaUser />
-          <span>{task.assignee}</span>
-        </div>
-        <div className="task-tags">
-          {task.tags.map((tag, index) => (
-            <span key={index} className="task-tag">
-              <FaTag />
-              {tag}
-            </span>
-          ))}
         </div>
       </div>
     </div>
@@ -507,7 +548,15 @@ const IndivisualDashboard = () => {
 
   return (
     <div className="dashboard-container">
-      <DragDropContext onDragEnd={onDragEnd}>
+      {projectData && (
+        <ProjectProgress
+          progress={projectData.progress}
+          totalTasks={projectData.totalTasks}
+          completedTasks={projectData.completedTasks}
+        />
+      )}
+      
+      <DragDropContext onDragEnd={onDragEnd} onDragStart={onDragStart}>
         <div className="kanban-board">
           {Object.entries(columns).map(([columnId, column]) => (
             <div key={columnId} className="kanban-column">
@@ -524,25 +573,102 @@ const IndivisualDashboard = () => {
                 )}
               </div>
               <Droppable droppableId={columnId}>
-                {(provided) => (
+                {(provided, snapshot) => (
                   <div
-                    className="column-content"
+                    className={`column-content ${snapshot.isDraggingOver ? 'dragging-over' : ''}`}
                     ref={provided.innerRef}
                     {...provided.droppableProps}
                   >
                     {column.items.map((task, index) => (
                       <Draggable
-                        key={task._id || task.id}
-                        draggableId={task._id || task.id}
+                        key={task._id}
+                        draggableId={task._id}
                         index={index}
                       >
-                        {(provided) => (
+                        {(provided, snapshot) => (
                           <div
                             ref={provided.innerRef}
                             {...provided.draggableProps}
                             {...provided.dragHandleProps}
+                            className={`task-card ${snapshot.isDragging ? 'dragging' : ''}`}
+                            style={{
+                              ...provided.draggableProps.style,
+                              transform: snapshot.isDragging ? provided.draggableProps.style.transform : 'none',
+                              transition: snapshot.isDragging ? 'none' : 'all 0.2s ease',
+                              cursor: 'grab'
+                            }}
                           >
-                            <TaskCard task={task} />
+                            <div className="task-header">
+                              <h3>{task.title}</h3>
+                              <div className="task-actions">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveDropdown(activeDropdown === task._id ? null : task._id);
+                                  }}
+                                  className="task-menu"
+                                  title="Task Actions"
+                                >
+                                  <FaEllipsisV />
+                                </button>
+                                {activeDropdown === task._id && (
+                                  <div className="task-dropdown">
+                                    <button 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleTaskAction('delete', task._id);
+                                      }}
+                                      className="dropdown-item delete"
+                                    >
+                                      <FaTrash /> Delete Task
+                                    </button>
+                                    {task.status === 'todo' && (
+                                      <button 
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleTaskAction('start', task._id);
+                                        }}
+                                        className="dropdown-item start"
+                                      >
+                                        <FaPlay /> Start Task
+                                      </button>
+                                    )}
+                                    {task.status === 'inProgress' && (
+                                      <button 
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleTaskAction('end', task._id);
+                                        }}
+                                        className="dropdown-item end"
+                                      >
+                                        <FaStop /> End Task
+                                      </button>
+                                    )}
+                                    <button 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleTaskAction('details', task._id);
+                                      }}
+                                      className="dropdown-item details"
+                                    >
+                                      <FaInfoCircle /> See Full Details
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <p className="task-description">{task.description}</p>
+                            <div className="task-footer">
+                              <div className="task-priority">
+                                <span className={`priority-badge ${task.priority}`}>
+                                  {task.priority}
+                                </span>
+                              </div>
+                              <div className="task-due-date">
+                                <FaClock />
+                                <span>{new Date(task.dueDate).toLocaleDateString()}</span>
+                              </div>
+                            </div>
                           </div>
                         )}
                       </Draggable>

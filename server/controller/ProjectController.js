@@ -15,6 +15,18 @@ const getAllProject = async (req, res) => {
             .populate('members', 'name email picture')
             .populate('tasks');
 
+        // Calculate progress for each project
+        for (let project of projects) {
+            const tasks = await Task.find({ projectID: project._id });
+            const completedTasks = tasks.filter(task => task.status === 'completed').length;
+            const totalTasks = tasks.length;
+            
+            project.totalTasks = totalTasks;
+            project.completedTasks = completedTasks;
+            project.progress = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
+            await project.save();
+        }
+
         res.status(200).json({
             success: true,
             projects
@@ -133,9 +145,56 @@ const createProject = async (req, res) => {
     }
 };
 
+const getProject = async (req, res) => {
+    try {
+        const projectId = req.params.id;
+        
+        if (!projectId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Project ID is required'
+            });
+        }
+
+        const project = await Project.findById(projectId)
+            .populate('members', 'name email picture')
+            .populate('tasks');
+
+        if (!project) {
+            return res.status(404).json({
+                success: false,
+                message: 'Project not found'
+            });
+        }
+
+        // Calculate progress
+        const tasks = await Task.find({ projectID: projectId });
+        const completedTasks = tasks.filter(task => task.status === 'completed').length;
+        const totalTasks = tasks.length;
+        
+        project.totalTasks = totalTasks;
+        project.completedTasks = completedTasks;
+        project.progress = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
+        await project.save();
+
+        res.status(200).json({
+            success: true,
+            data: project
+        });
+    } catch (error) {
+        console.error('Error in getProject:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching project',
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     getAllProject,
-    createProject
+    createProject,
+    getProject
 };
 
 

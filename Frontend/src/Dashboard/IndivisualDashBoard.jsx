@@ -192,7 +192,7 @@ const IndivisualDashboard = () => {
     });
   };
 
-  const onDragEnd = (result) => {
+  const onDragEnd = async (result) => {
     if (!result.destination) return;
 
     const { source, destination } = result;
@@ -205,6 +205,7 @@ const IndivisualDashboard = () => {
       const [removed] = sourceItems.splice(source.index, 1);
       destItems.splice(destination.index, 0, removed);
       
+      // Update the columns state
       setColumns({
         ...columns,
         [source.droppableId]: {
@@ -216,6 +217,38 @@ const IndivisualDashboard = () => {
           items: destItems
         }
       });
+
+      // Update the task status in the backend
+      try {
+        const token = localStorage.getItem('token') || localStorage.getItem('googleToken');
+        if (!token) {
+          console.error('No authentication token found');
+          return;
+        }
+
+        const response = await axios.patch(
+          `http://localhost:8000/api/updateTaskStatus/${removed._id || removed.id}`,
+          {
+            status: destination.droppableId,
+            projectId: ID
+          },
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          }
+        );
+
+        if (!response.data.success) {
+          console.error('Failed to update task status:', response.data.message);
+          // Revert the UI change if the backend update fails
+          setColumns(columns);
+        }
+      } catch (error) {
+        console.error('Error updating task status:', error.response?.data || error.message);
+        // Revert the UI change if the backend update fails
+        setColumns(columns);
+      }
     } else {
       const column = columns[source.droppableId];
       const copiedItems = [...column.items];

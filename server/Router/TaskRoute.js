@@ -6,5 +6,6 @@ const auth = require('../middleware/auth');
 // Protected routes - require authentication
 router.get('/GetTask/:projectId', auth, TaskController.getTask);
 router.post('/createTask/:projectId', auth, TaskController.createTask);
+router.patch('/updateTaskStatus/:taskId', auth, TaskController.updateTaskStatus);
 
 module.exports = router;

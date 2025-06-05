@@ -107,3 +107,56 @@ exports.createTask = async (req, res) => {
         });
     }
 };
+
+// Update task status
+exports.updateTaskStatus = async (req, res) => {
+    try {
+        const { taskId } = req.params;
+        const { status, projectId } = req.body;
+
+        // Validate required fields
+        if (!taskId || !status || !projectId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Task ID, status, and project ID are required'
+            });
+        }
+
+        // Validate status
+        const validStatuses = ['todo', 'inProgress', 'completed', 'review'];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid status value'
+            });
+        }
+
+        // Find and update the task
+        const updatedTask = await Task.findOneAndUpdate(
+            { _id: taskId, projectID: projectId },
+            { status },
+            { new: true }
+        );
+
+        if (!updatedTask) {
+            return res.status(404).json({
+                success: false,
+                message: 'Task not found'
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: 'Task status updated successfully',
+            data: updatedTask
+        });
+
+    } catch (error) {
+        console.error('Error in updateTaskStatus:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error',
+            error: error.message
+        });
+    }
+};
